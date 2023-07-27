@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I am a language tutor</title>
+  <link rel="stylesheet" href="./styles/index.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="">po-russki</a> /
+      <a href="">in english</a> / 
+      <a href="">中文</a>
+    </div>
+    <div class="header-right">
+      <a href="" class="cv">CV</a>
+      <!-- <a href="" class="log-in">log in</a> -->
+    </div>
+  </header>
+  <main>
+    <div class="flex-padding-left"></div>
+    <div class="container">
+      <h1 class="header-left">
+      I am a tutor
+      </h1>
+      <p class="upper-text-left">
+      My name is Anya, I am based in Ekaterinburg, Russia. I am a very cool and good tutor. I am studying at somewhere and I do various cool stuff to facilitate your language progress.
+      </p>
+      <h2 class="h2-left">I can be:</h3>
+      <div class="languages">
+        <span class="lang" id="lang-chinese">a Chinese tutor</span> <span class="price" id="price-chinese">1000₽/hour</span>
+        <span class="lang" id="lang-english">an English tutor</span> <span class="price" id="price-english">1500₽/hour</span>
+        <span class="lang" id="lang-russian">a Russian tutor</span> <span class="price" id="price-russian">1000₽/hour</span>
+      </div>
+      <p class="lower-text-left">
+        I will give you what you want <br>
+        Yeah, i will! <br>
+        Please, buy my services
+      </p>
+      <div class="reviews">
+        <h3>reviews</h3>
+      </div>
+      <h2 class="h2-right">
+        Here is my timetable:
+      </h1>
+      <form action="/set_rendez-vous" method="post" class="calendar">
+        <table>
+          <thead>
+            <tr>
+              <td class="day">
+                Day
+              </td>
+              <td class="timeslot">Slots</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="day">Monday</td>
+              <td class="timeslot">10:00 11:00 12:00 18:00 19:00 20:00</td>
+            </tr>
+            <tr>
+              <td class="day">Tuesday</td>
+              <td class="timeslot">10:00 11:00 12:00 18:00 19:00 20:00</td>
+            </tr>
+            <tr>
+              <td class="day">Wednesday</td>
+              <td class="timeslot">10:00 11:00  20:00</td>
+            </tr>
+            <tr>
+              <td class="day">Thursday</td>
+              <td class="timeslot">10:00 11:00 12:00 20:00</td>
+            </tr>
+            <tr>
+              <td class="day">Friday</td>
+              <td class="timeslot">none</td>
+            </tr>
+            <tr>
+              <td class="day">Saturday</td>
+              <td class="timeslot">none</td>
+            </tr>
+            <tr>
+              <td class="day">Sunday</td>
+              <td class="timeslot">10:00</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>Contact me:</h4>
+        <div class="zoom-form">
+          <h4>a Zoom call?</h4>
+          <div class="zoom-input">     
+            <label for="time-date">let's have a zoom call on</label>
+            <select name="time-date" id="time-date">
+              <optgroup label="Monday">
+                <option value="monday_11">Monday, 3 September at 11:00</option>
+                <option value="monday_12">Monday, 3 September at 12:00</option>
+              </optgroup>
+              <optgroup label="Tuesday">
+                <option value="tuesday_9">Tuesday, 4 September at 9:00</option>
+              </optgroup>
+            </select>
+            <label for="email">just leave me your email:</label>
+            <input type="email" name="email" id="email">
+          </div>
+          <button type="submit">Arrange call!</button>
+        </div>
+      </form>
+      <address>
+        <span class="contact-details"><span class="contact-medium">Whatsapp</span>: <span class="contact-number">0123456789</span></span>
+        <span class="contact-details"><span class="contact-medium">WeChat</span>: <span class="contact-number">0123456789</span></span>
+        <span class="contact-details"><span class="contact-medium">Email</span>: <span class="contact-number">0987654321</span></span>
+      </address>
+    </div>
+    <div class="flex-padding-right"></div>
+  </main>
+</body>
+</html>
