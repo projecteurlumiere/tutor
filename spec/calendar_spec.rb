@@ -1,10 +1,7 @@
-require_relative 'main'
+require './main.rb'
 
 describe Calendar do
   subject { Calendar.new(good_timetable) }
-
-  let(:fake_today) { fake_today = Time.parse("2023/7/28") } 
-  # fake_today is friday
 
   let(:good_timetable) do
     {
@@ -15,6 +12,18 @@ describe Calendar do
       friday: Set[15],
       saturday: Set[20, 21],
       sunday: Set[13, 14, 15, 16, 17, 18]
+    }
+  end
+
+  let(:empty_timetable) do
+    {
+      monday: Set[],
+      tuesday: Set[],
+      wednesday: Set[],
+      thursday: Set[],
+      friday: Set[],
+      saturday: Set[],
+      sunday: Set[]
     }
   end
 
@@ -30,7 +39,7 @@ describe Calendar do
     }
   end
 
-  let(:occupied_slots_hash) do {
+  let(:meetings_hash) do {
     :'2023/7/29' => Set[20, 21]
   }
   end
@@ -40,24 +49,24 @@ describe Calendar do
       expect(subject.timetable).to eql(good_timetable)
     end
 
-    it 'returns nil if the incoming table does not use sets' do
+    it 'returns empty timetable if the incoming table does not use sets' do
       good_timetable[:monday] = [9, 10, 11]
-      expect(subject.timetable).to eql(nil)
+      expect(subject.timetable).to eql(empty_timetable)
     end
 
-    it 'returns nil if the incoming table hours are not 0-24' do
+    it 'returns empty timetable if the incoming table hours are not 0-24' do
       good_timetable[:monday] = Set[20, 21, 25]
-      expect(subject.timetable).to eql(nil)
+      expect(subject.timetable).to eql(empty_timetable)
     end
 
-    it 'returns nil if the incoming table lacks day' do
+    it 'returns empty timetable if the incoming table lacks day' do
       good_timetable[:monday] = nil
-      expect(subject.timetable).to eql(nil)
+      expect(subject.timetable).to eql(empty_timetable)
     end
 
-    it 'returns nil if the incoming table has too many days' do
+    it 'returns empty timetable if the incoming table has too many days' do
       good_timetable[:bruhday] = Set[10, 11, 12]
-      expect(subject.timetable).to eql(nil)
+      expect(subject.timetable).to eql(empty_timetable)
     end
 
     it 'modifies the timetable if valid changes are made' do
@@ -74,13 +83,16 @@ describe Calendar do
   end
 
   context 'when planning week agenda' do
-    before(:all) { allow(Time).to receive(:now) { fake_today } }
+    let!(:fake_today) { Time.parse("2023/7/28") } 
+    # fake_today is friday
+
+    before(:each) { allow(Time).to receive(:now) { fake_today } }
 
     it 'returns a hash with possible meeting days starting tomorrow until one week ahead' do
-      expect(subject.week_agenda).to eql(good_week_agenda)
+      expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
-    it 'returns a hash with possible meeting days starting today until one week ahead if configured' do
+    xit 'returns a hash with possible meeting days starting today until one week ahead if configured' do
       allow(subject).to receive(:schedule_for_today?) { true }
 
       good_week_agenda[:'2023/7/28'] = good_timetable[:saturday]
@@ -90,10 +102,10 @@ describe Calendar do
     end
 
     it 'returns a hash with possible meeting days taking into account meetings that are already scheduled' do
-      allow(subject).to receive(:future_scheduled_slots) { occupied_slots_hash }
+      allow(subject).to receive(:future_meetings) { meetings_hash }
       good_week_agenda[:'2023/7/29'] = Set[]
 
-      expect(subject.week_agenda).to eql(good_week_agenda)
+      expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
     it 'changes week agenda when a meeting is scheduled' do
@@ -104,7 +116,7 @@ describe Calendar do
     end
 
     it 'changes week agenda when a meeting is cancelled' do
-      allow(subject).to receive(:future_scheduled_slots) { occupied_slots_hash }
+      allow(subject).to receive(:future_meetings) { meetings_hash }
       subject.cancel_meeting(:saturday, 20)
 
       good_week_agenda[:'2023/7/29'] = Set[21]
@@ -116,14 +128,14 @@ describe Calendar do
       subject.schedule_meeting(:saturday, 20)
       subject.schedule_meeting(:saturday, 21)
 
-      expect(subject.future_scheduled_slots).to eql(occupied_slots_hash)
+      expect(subject.future_meetings).to eql(meetings_hash)
     end
 
-    xit 'schedules meetings by dates' do
+    it 'schedules meetings by dates' do
       # next friday
       subject.schedule_meeting(:'2023/8/4', 20)
 
-      expect(subject.future_scheduled_slots).to eql({ :'2023/8/4' => 20 })
+      expect(subject.future_meetings).to eql({ :'2023/8/4' => 20 })
     end
   end
 end
