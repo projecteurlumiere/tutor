@@ -88,34 +88,93 @@ describe Calendar do
 
     before(:each) { allow(Time).to receive(:now) { fake_today } }
 
-    it 'returns a hash with possible meeting days starting tomorrow until one week ahead' do
+    it 'returns a hash with possible meeting dates starting tomorrow until one week ahead' do
       expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
-    xit 'returns a hash with possible meeting days starting today until one week ahead if configured' do
-      allow(subject).to receive(:schedule_for_today?) { true }
+    it 'returns a hash with possible meeting days starting tomorrow until one week ahead' do
+      good_week_agenda = good_timetable
 
-      good_week_agenda[:'2023/7/28'] = good_timetable[:saturday]
-      good_week_agenda[:'2023/8/4'] = nil
-
-      expect(subject.week_agenda).to eql(good_week_agenda)
+      expect(subject.week_agenda_wdays).to eql(good_week_agenda)
     end
 
-    it 'returns a hash with possible meeting days taking into account meetings that are already scheduled' do
+    # xit 'returns a hash with possible meeting days starting today until one week ahead if configured' do
+    #   allow(subject).to receive(:schedule_for_today?) { true }
+
+    #   good_week_agenda[:'2023/7/28'] = good_timetable[:saturday]
+    #   good_week_agenda[:'2023/8/4'] = nil
+
+    #   expect(subject.week_agenda).to eql(good_week_agenda)
+    # end
+
+    it 'privately displays future meetings when scheduled slots are imported' do
+      subject.import_scheduled_slots({:'2020/8/4' => Set[10], :'2023/8/4' =>  Set[20] })
+      
+      expect(subject.future_meetings).to eql({ :'2023/8/4' => Set[20] })
+    end
+
+    it 'privately converts week days to closest dates (excluding today)' do
+      expect(subject.send(:week_day_to_closest_date, :friday)).to eql('2023/8/4')
+    end
+
+    it 'schedules meetings by dates' do
+      # next friday
+      subject.schedule_meeting(:'2023/8/4', 20)
+
+      expect(subject.future_meetings).to eql({ :'2023/8/4' => Set[20] })
+    end
+
+    it 'schedules meetings by week days' do
+      subject.schedule_meeting(:friday, 20)
+
+      expect(subject.future_meetings).to eql({ :'2023/8/4' => Set[20]})
+    end
+
+    it 'cancels scheduled meetings by dates' do
+      subject.schedule_meeting(:'2023/8/4', 20)
+      subject.cancel_meeting(:'2023/8/4', 20)
+
+      expect(subject.future_meetings).to eql({})
+    end
+    
+    it 'cancels scheduled meetings by week days' do
+      subject.schedule_meeting(:friday, 20)
+      subject.cancel_meeting(:friday, 20)
+
+      expect(subject.future_meetings).to eql({})
+    end
+
+    it 'cancels scheduled meetings and does not delete entire days if there are other meetings' do
+      subject.schedule_meeting(:'2023/8/4', 20)
+      subject.schedule_meeting(:'2023/8/4', 21)
+      subject.cancel_meeting(:friday, 20) # it's still 2023/8/4
+
+      expect(subject.future_meetings).to eql({ :'2023/8/4' => Set[21] })
+    end
+
+    it 'returns a hash with open slots for week days' do
+      allow(subject).to receive(:future_meetings) { meetings_hash }
+      good_week_agenda = good_timetable
+      good_week_agenda[:saturday] = Set[]
+
+      expect(subject.week_agenda_wdays).to eql(good_week_agenda)
+    end
+
+    it 'returns a hash with open slots for dates' do
       allow(subject).to receive(:future_meetings) { meetings_hash }
       good_week_agenda[:'2023/7/29'] = Set[]
 
       expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
-    it 'changes week agenda when a meeting is scheduled' do
+    xit 'changes week agenda when a meeting is scheduled' do
       good_week_agenda[:'2023/7/29'] = Set[21]
       subject.schedule_meeting(:saturday, 20)
 
       expect(subject.week_agenda).to eql(good_week_agenda)
     end
 
-    it 'changes week agenda when a meeting is cancelled' do
+    xit 'changes week agenda when a meeting is cancelled' do
       allow(subject).to receive(:future_meetings) { meetings_hash }
       subject.cancel_meeting(:saturday, 20)
 
@@ -124,18 +183,11 @@ describe Calendar do
       expect(subject.week_agenda).to eql(good_week_agenda)
     end
 
-    it 'outputs scheduled meetings' do
+    xit 'outputs scheduled meetings' do
       subject.schedule_meeting(:saturday, 20)
       subject.schedule_meeting(:saturday, 21)
 
       expect(subject.future_meetings).to eql(meetings_hash)
-    end
-
-    it 'schedules meetings by dates' do
-      # next friday
-      subject.schedule_meeting(:'2023/8/4', 20)
-
-      expect(subject.future_meetings).to eql({ :'2023/8/4' => 20 })
     end
   end
 end

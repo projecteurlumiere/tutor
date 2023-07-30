@@ -26,8 +26,7 @@ end
 class Calendar
   attr_reader :timetable
 
-  # replace with Date::DAYNAMES
-  WEEK_DAYS = Set['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+  WEEK_DAYS = Date::DAYNAMES.map(&:downcase)
 
   def initialize(timetable_hash = nil, scheduled_slots_hash = nil)
     @timetable = import_timetable(timetable_hash)
@@ -53,13 +52,13 @@ class Calendar
   def import_scheduled_slots(scheduled_slots_hash)
     if scheduled_slots_valid?(scheduled_slots_hash)
       scheduled_slots_hash.map do |date, hours|
-        parsed_date = Time.parse(date.to_s)
-        date = "#{parsed_date.year}/#{parsed_date.month}/#{parsed_date.day}"
+        parsed_date = Time.parse(date.to_s).to_date
+        date = format_date_from_string_or_object(parsed_date)
         [date.to_sym, hours.to_set]
       end.to_h
-      scheduled_slots_hash
+      @scheduled_slots = scheduled_slots_hash
     else
-      Hash.new(Set[])
+      @scheduled_slots = Hash.new(Set[])
     end
   end
 
@@ -70,10 +69,10 @@ class Calendar
     self
   end
 
-  def future_meetings(start_date)
-    today = start_date - 1
+  def future_meetings(start_date = Time.now.to_date + 1)
+
     @scheduled_slots.each_with_object(Hash.new(Set[])) do |(date, hours), hash|
-      if Time.parse(date.to_s) > today
+      if Time.parse(date.to_s).to_date > start_date
         hash.update({ date => hours })
       end
     end
@@ -82,19 +81,20 @@ class Calendar
   def one_week_of_future_meetings(start_date)
     future_meetings(start_date).each_with_object(Hash.new(Set[])) do |(date, hours), hash|
       parsed_date = Date.parse(date.to_s)
-      hash.update({ date.to_sym => hours }) if parsed_date >= start_date && parsed_date < start_date + 7
+      hash.update({ date => hours }) if parsed_date >= start_date && parsed_date < start_date + 7
     end
   end
 
   def week_agenda_dates(start_date = Time.now.to_date.next_day)
-    (0..6).each_with_object(Hash.new(Set[])) do |i, week_agenda|
-      date = (Date.parse(start_date.to_s) + i)
-
-      week_agenda.update(
-        { 
-          "#{date.year}/#{date.month}/#{date.day}".to_sym => week_agenda_wdays(start_date)[Date::DAYNAMES[date.wday].downcase.to_sym]
-        })
+    one_week_of_future_meetings(start_date).each_with_object(timetable_with_date_keys(start_date)) do |(key, value), timetable_hash|
+      timetable_hash[key] = (timetable_hash[key].to_a - value.to_a).to_set
     end
+    
+    # one_week_of_future_meetings(start_date).each_with_object(@timetable) do |(m_date, m_hours), timetable_hash|
+    #   week_day = Date::DAYNAMES[Date.parse(m_date.to_s).wday].to_sym
+    #   puts "m_date is #{m_date}"
+    #   timetable_hash[m_date] = (timetable_hash[week_day].to_a - m_hours.to_a).to_set
+    # end
   end
 
   def week_agenda_wdays(start_date = Time.now.to_date.next_day)
@@ -106,25 +106,50 @@ class Calendar
   end
 
   def schedule_meeting(day_or_date, hour)
+    puts "day or date is #{day_or_date} and hour is #{hour}"
+    
     return unless proposed_meeting_valid?(day_or_date, hour)
 
-    date = week_day_to_closest_date(day_or_date) if WEEK_DAYS.include?(day_or_date.to_s)
+    puts "metting is valid"
+
+    if WEEK_DAYS.include?(day_or_date.to_s)
+      puts "converting days to date"
+      date = week_day_to_closest_date(day_or_date)
+      puts "converted to #{date}"
+    else 
+      puts "no need in conversion"
+      date = day_or_date
+      puts "date is #{date}"
+    end
 
     return if meeting_already_exist?(date, hour)
 
-    @scheduled_slots[date.to_sym] << hour
+    puts "meeting does not exist\nscheduled slots are #{@scheduled_slots}"
+
+    @scheduled_slots[date.to_sym] = @scheduled_slots[date.to_sym] << hour
+
+    puts "updated @scheduled_slots: #{@scheduled_slots}"
     @scheduled_slots[date.to_sym].sort
   end
 
   def cancel_meeting(day_or_date, hour)
     return unless proposed_meeting_valid?(day_or_date, hour)
 
-    date = week_day_to_closest_date(day_or_date) if WEEK_DAYS.include?(day_or_date.to_s)
+    if WEEK_DAYS.include?(day_or_date.to_s)
+      date = week_day_to_closest_date(day_or_date) 
+    else 
+      date = day_or_date
+    end
 
-    return unless meeting_already_exist?(day, hour)
+    return unless meeting_already_exist?(date, hour)
 
     @scheduled_slots[date.to_sym].delete(hour)
-    @scheduled_slots[date.to_sym].sort
+
+    if @scheduled_slots[date.to_sym].empty?
+      @scheduled_slots.delete(date.to_sym)
+    else
+      @scheduled_slots[date.to_sym].sort
+    end
   end
 
   private
@@ -199,16 +224,39 @@ class Calendar
     tomorrow = Time.now.to_date + 1
 
     # Sunday is 0 according to wday
-    sorted_days = [] + WEEK_DAYS.to_a
-    sorted_days = sorted_days.to_a.unshift(week_days.to_a.pop).to_set
-    week_day = sorted_days.index(week_day.to_s)
+    week_day = Date::DAYNAMES.index(week_day.to_s.capitalize)
 
-    if week_day == tomorrow.wday
-      tomorrow
-    elsif week_day < tomorrow
-      tomorrow + 7 - (tomorrow.wday - week_day)
-    elsif week_day > tomorrow
-      tomorrow + (week_day - tomorrow.wday)
+    format_date_from_string_or_object do
+      if week_day == tomorrow.wday.to_i
+        tomorrow
+      elsif week_day < tomorrow.wday.to_i
+        tomorrow + 7 - (tomorrow.wday.to_i - week_day)
+      elsif week_day > tomorrow
+        tomorrow + (week_day - tomorrow.wday.to_i)
+      end
+    end
+  end
+
+  def format_date_from_string_or_object(date_object = nil)
+    if block_given?
+      date = yield
+    elsif 
+      date = date_object
+    end
+
+    date = Date.parse(date) unless date.instance_of?(Date)
+
+    "#{date.year}/#{date.month}/#{date.day}"
+  end
+
+  def timetable_with_date_keys(start_date)
+
+    temp_timetable =  @timetable.each_key {|key| Date.parse(key.to_s).wday}
+
+    index = 0
+    temp_timetable.each_with_object(Hash.new(Set[])) do |(key, _value), new_hash|
+      new_hash[format_date_from_string_or_object(start_date + index).to_sym] = temp_timetable[start_date.wday + index]
+      index += 1
     end
   end
 end
