@@ -167,23 +167,25 @@ describe Calendar do
       expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
-    xit 'changes week agenda when a meeting is scheduled' do
+    it 'changes week agenda when a meeting is scheduled' do
       good_week_agenda[:'2023/7/29'] = Set[21]
       subject.schedule_meeting(:saturday, 20)
 
-      expect(subject.week_agenda).to eql(good_week_agenda)
+      expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
-    xit 'changes week agenda when a meeting is cancelled' do
-      allow(subject).to receive(:future_meetings) { meetings_hash }
+    it 'changes week agenda when a meeting is cancelled' do
+      subject.schedule_meeting(:saturday, 20)
+      subject.schedule_meeting(:saturday, 21)
+
       subject.cancel_meeting(:saturday, 20)
 
-      good_week_agenda[:'2023/7/29'] = Set[21]
+      good_week_agenda[:'2023/7/29'] = Set[20]
 
-      expect(subject.week_agenda).to eql(good_week_agenda)
+      expect(subject.week_agenda_dates).to eql(good_week_agenda)
     end
 
-    xit 'outputs scheduled meetings' do
+    it 'outputs scheduled meetings' do
       subject.schedule_meeting(:saturday, 20)
       subject.schedule_meeting(:saturday, 21)
 

@@ -70,9 +70,8 @@ class Calendar
   end
 
   def future_meetings(start_date = Time.now.to_date + 1)
-
     @scheduled_slots.each_with_object(Hash.new(Set[])) do |(date, hours), hash|
-      if Time.parse(date.to_s).to_date > start_date
+      if Time.parse(date.to_s).to_date >= start_date
         hash.update({ date => hours })
       end
     end
@@ -250,13 +249,21 @@ class Calendar
   end
 
   def timetable_with_date_keys(start_date)
+    new_timetable = Hash.new(Set[])
+    (0..6).each do |day|
+      new_timetable[format_date_from_string_or_object(start_date + day)] = nil
+    end
 
-    temp_timetable =  @timetable.each_key {|key| Date.parse(key.to_s).wday}
+    new_timetable.each_with_object(timetable_daynames_to_numbers) do |(date, hours), timetable_hash|
+      new_timetable[date] = timetable_hash[Date.parse(date).wday]
+    end
 
-    index = 0
-    temp_timetable.each_with_object(Hash.new(Set[])) do |(key, _value), new_hash|
-      new_hash[format_date_from_string_or_object(start_date + index).to_sym] = temp_timetable[start_date.wday + index]
-      index += 1
+    new_timetable.transform_keys(&:to_sym)
+  end
+
+  def timetable_daynames_to_numbers
+    @timetable.each_with_object(Hash.new(Set[])) do |(wday, hours), new_hash|
+      new_hash[WEEK_DAYS.index(wday.to_s.downcase)] = hours
     end
   end
 end
